@@ -2,12 +2,15 @@ name: Check ZHS courts
 
 on:
   schedule:
-    # Fires every 5 min (GitHub's minimum). Each job loops internally for up
-    # to ~70 min checking every 60 s; the concurrency group below makes sure
-    # only one job runs at a time and the next queued one takes over
-    # seamlessly when it exits — giving continuous 1-minute coverage.
-    - cron: "*/5 * * * *"
+    # Backup watchdog only: each job re-triggers its successor itself (last
+    # step below), so handover is instant. GitHub cron is unreliable
+    # (often 10-30 min late) and merely restarts the chain if it ever breaks.
+    - cron: "*/15 * * * *"
   workflow_dispatch: {}
+
+permissions:
+  actions: write
+  contents: read
 
 concurrency:
   group: zhs-check
@@ -48,3 +51,9 @@ jobs:
         with:
           path: state
           key: zhs-state-${{ github.run_id }}
+
+      - name: Trigger next run (self-sustaining chain)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run check.yml --ref main --repo "$GITHUB_REPOSITORY"
