@@ -39,6 +39,7 @@ jobs:
           TUM_USER: ${{ secrets.TUM_USER }}
           TUM_PASS: ${{ secrets.TUM_PASS }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          PYTHONUNBUFFERED: "1"
         run: python checker.py
 
       - name: Save state
