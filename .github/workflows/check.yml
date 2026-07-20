@@ -1,0 +1,47 @@
+name: Check ZHS courts
+
+on:
+  schedule:
+    # every 30 min between 05:00–20:59 UTC (= 07:00–22:59 German summer time).
+    # GitHub cron uses UTC and runs can be delayed by a few minutes.
+    - cron: "*/30 5-20 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: zhs-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Restore state (session cookie + already-notified slots)
+        uses: actions/cache/restore@v4
+        with:
+          path: state
+          key: zhs-state-${{ github.run_id }}
+          restore-keys: zhs-state-
+
+      - run: pip install -r requirements.txt
+
+      - name: Run checker
+        env:
+          TUM_USER: ${{ secrets.TUM_USER }}
+          TUM_PASS: ${{ secrets.TUM_PASS }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python checker.py
+
+      - name: Save state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state
+          key: zhs-state-${{ github.run_id }}
