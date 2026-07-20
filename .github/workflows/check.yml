@@ -2,9 +2,11 @@ name: Check ZHS courts
 
 on:
   schedule:
-    # every 30 min between 05:00–20:59 UTC (= 07:00–22:59 German summer time).
-    # GitHub cron uses UTC and runs can be delayed by a few minutes.
-    - cron: "*/30 5-20 * * *"
+    # Fires every 5 min (GitHub's minimum). Each job loops internally for up
+    # to ~70 min checking every 60 s; the concurrency group below makes sure
+    # only one job runs at a time and the next queued one takes over
+    # seamlessly when it exits — giving continuous 1-minute coverage.
+    - cron: "*/5 * * * *"
   workflow_dispatch: {}
 
 concurrency:
@@ -14,7 +16,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 80
     steps:
       - uses: actions/checkout@v4
 
@@ -23,7 +25,7 @@ jobs:
           python-version: "3.12"
           cache: pip
 
-      - name: Restore state (session cookie + already-notified slots)
+      - name: Restore state (session cookie + watches)
         uses: actions/cache/restore@v4
         with:
           path: state
@@ -32,7 +34,7 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Run checker
+      - name: Run watcher loop
         env:
           TUM_USER: ${{ secrets.TUM_USER }}
           TUM_PASS: ${{ secrets.TUM_PASS }}
