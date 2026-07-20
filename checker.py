@@ -465,9 +465,10 @@ def is_night(now=None):
 # ---------------------------------------------------------------- main loop
 
 def main():
-    user = os.environ["TUM_USER"]
-    password = os.environ["TUM_PASS"]
-    topic = os.environ["NTFY_TOPIC"]
+    # .strip() guards against stray whitespace/newlines pasted into secrets
+    user = os.environ["TUM_USER"].strip()
+    password = os.environ["TUM_PASS"].strip()
+    topic = os.environ["NTFY_TOPIC"].strip()
     once = "--once" in sys.argv
 
     state = load_state()
